@@ -32,6 +32,13 @@ def get_siganture_key() -> str:
         return data["signature"]    
     except Exception as e:
         raise KeyError("No key found")
+def get_telebot_token() -> str:
+    try:
+        with open(path,"r") as file:
+            data = json.load(file)
+        return data[telebot]    
+    except KeyError:
+        raise KeyError("No suck key")
 
 
 def verify_signature(data: dict, received_signature: str) -> bool:
@@ -53,7 +60,9 @@ async def safe_get(req:Request):
     if not api or not hmac.compare_digest(api,get_api_key()):
         raise HTTPException(status_code = 403,detail = "Forbidden")
 
+ 
 app = FastAPI()
+bot = telebot.Telebot(get_telebot_token())
 
 @app.get("/")
 async def main():
@@ -64,4 +73,17 @@ class Register(BaseModel):
     user_id:str
 @app.get("/register")
 async def register(req:Register,x_signature:str = Header(...),x_timestamp:str = Header(...)):
-    if not 
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 400,detail = "Invalid signature")
+    try:
+        pass
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
+def run_api():
+    uvicorn.run(app,host = "0.0.0.0",port = 8080)
+def run_bot():
+    bot.polling(none_stop = True)
+if __name__ == "__main__":
+    threading.Thread(target = run_bot,daemon = True).start()
+    run_api()
