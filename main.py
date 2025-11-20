@@ -99,7 +99,13 @@ async def register(req:Register,x_signature:str = Header(...),x_timestamp:str = 
         raise HTTPException(status_code = 400,detail = "Invalid signature")
     try:
         with open("data/balance.json","r") as file:
-            data = json.load(file)    
+            data = json.load(file)   
+        if binary_search_users(req.user_id,"data/balance.json"):
+            raise HTTPException(status_code = 400,detail = "This user already exists")
+        else:
+            data[req.user_id] = 0
+            with open("data/balance.json","w") as file:
+                json.dump(data,file)            
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 

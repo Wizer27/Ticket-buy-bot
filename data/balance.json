@@ -1,6 +1,3 @@
-[
-  {
-    "username":"username",
-    "balance":0     
-  }
-]
+{
+  "username":0
+}
