@@ -96,7 +96,7 @@ class Register(BaseModel):
 @app.post("/register")
 async def register(req:Register,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
-        raise HTTPException(status_code = 400,detail = "Invalid signature")
+        raise HTTPException(status_code = 403,detail = "Invalid signature")
     try:
         with open("data/balance.json","r") as file:
             data = json.load(file)   
@@ -120,6 +120,26 @@ async def get_user_balance(username:str):
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
+class Balance(BaseModel):
+    username:str
+    amount:int
+@app.post("/increase/user/balance")
+async def increase_user_balance(req:Balance,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 403,detail = "Invalid signature")
+    else:
+        try:
+            with open("data/balance.json","r") as file:
+                data = json.load(file)
+            if not binary_search_users(req.username):
+                raise HTTPException(status_code = 404,detail = "Error user not found")
+            else:
+                data[req.username] += req.amount
+                with open("data/balance.json","w") as file:
+                    json.dump(data,file)
+                    
+        except Exception as e:
+            raise HTTPException(status_code = 400,detail = f"Error : {e}")
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)
 def run_bot():
