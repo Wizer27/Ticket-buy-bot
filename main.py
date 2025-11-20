@@ -93,7 +93,7 @@ async def main():
 
 class Register(BaseModel):
     user_id:str
-@app.get("/register")
+@app.post("/register")
 async def register(req:Register,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 400,detail = "Invalid signature")
@@ -106,6 +106,17 @@ async def register(req:Register,x_signature:str = Header(...),x_timestamp:str = 
             data[req.user_id] = 0
             with open("data/balance.json","w") as file:
                 json.dump(data,file)            
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
+@app.get("/get/{username}/balance",dependencies = [Depends(safe_get)])
+async def get_user_balance(username:str):
+    try:
+        with open("data/balance.json","r") as file:
+            data = json.load(file)
+        if not binary_search_users(username):
+            raise HTTPException(status_code = 404,detail = "User not found")
+        else:
+            return data[username] 
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
