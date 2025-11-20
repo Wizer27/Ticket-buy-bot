@@ -60,6 +60,28 @@ async def safe_get(req:Request):
     if not api or not hmac.compare_digest(api,get_api_key()):
         raise HTTPException(status_code = 403,detail = "Forbidden")
 
+
+def binary_search_users(username:str,path:str = None) -> bool:
+    if not path:
+        raise KeyError("Path not found")
+    try:
+        with open(path,"r") as file:
+            data = json.load(file)
+        users = data.keys()
+        users = sorted(users)
+        l = 0
+        r = len(users) - 1
+        while l <= r:
+            mid = (l + r) // 2
+            if users[mid] < username: 
+                l = mid + 1
+            elif users[mid] > username:
+                r = mid - 1
+            else:
+                return True
+        return False
+    except Exception as e:
+        raise KeyError(f"Error : {e}")
  
 app = FastAPI()
 bot = telebot.Telebot(get_telebot_token())
@@ -76,7 +98,8 @@ async def register(req:Register,x_signature:str = Header(...),x_timestamp:str = 
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 400,detail = "Invalid signature")
     try:
-        pass
+        with open("data/balance.json","r") as file:
+            data = json.load(file)    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
