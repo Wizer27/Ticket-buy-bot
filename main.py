@@ -82,6 +82,10 @@ def binary_search_users(username:str,path:str = None) -> bool:
         return False
     except Exception as e:
         raise KeyError(f"Error : {e}")
+
+
+def search_market_wb(name:str):
+    pass
  
 app = FastAPI()
 bot = telebot.Telebot(get_telebot_token())
@@ -123,7 +127,7 @@ async def get_user_balance(username:str):
 class Balance(BaseModel):
     username:str
     amount:int
-@app.post("/increase/user/balance")
+@app.post("/increase")
 async def increase_user_balance(req:Balance,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 403,detail = "Invalid signature")
@@ -140,6 +144,27 @@ async def increase_user_balance(req:Balance,x_signature:str = Header(...),x_time
                     
         except Exception as e:
             raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
+@app.post("/withdraw")
+async def withdraw(req:Balance,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 403,detail = "Invalid signature")
+    try:
+        with open("data/balance.json","r") as file:
+            data = json.load(file)
+        if not binary_search_users(req.username):
+            raise HTTPException(status_code = 404,detail = "User not found")
+        else:
+            if not data[req.username] >= req.amount:
+                data[req.username] -= req.amount
+                with open("data/balance.json","w") as file:
+                    json.dump(data,file)
+            else:
+                raise HTTPException(status_code = 400,detail = "User doesnt have enough money  ")
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
+            
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)
 def run_bot():
